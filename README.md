@@ -89,3 +89,77 @@ To be completed after the end-to-end pipeline is validated.
 - The project uses synthetic data, not actual Delhivery operational records.
 - Model results are based on the generated dataset and should not be
   interpreted as actual company performance.
+
+
+## Model results (regression)
+
+### Data split and leakage prevention
+
+The modelling dataset contained 1,200 shipments and 17 input features.
+The data was split into 840 training rows, 180 validation rows and
+180 test rows using random_state=42.
+
+StandardScaler was fitted only on the training data. The maximum
+absolute mean of the scaled training features was approximately
+0.0000, while the corresponding test value was 0.2187, confirming
+that the test data was not used to fit the scaler.
+
+### Baseline performance
+
+The mean baseline achieved a validation R² of -0.0212.
+This indicates that predicting the training-set average does not
+provide useful predictive performance compared with the regression
+models.
+
+### Model comparison
+
+Linear Regression achieved the best validation RMSE of 4.8912 hours
+and validation R² of 0.9313. Gradient Boosting was a close second,
+with RMSE of 4.9165 hours and R² of 0.9306.
+
+Random Forest achieved validation R² of 0.9128, while the
+Decision Tree achieved 0.8867.
+
+### Decision-tree bias and variance
+
+A depth-1 tree showed high bias, with training RMSE of 11.6334
+and validation RMSE of 12.1324.
+
+The unlimited-depth tree showed high variance: its training RMSE
+was 0.0000, while validation RMSE increased to 7.8368.
+
+A depth-6 tree achieved the lowest validation RMSE of 6.2796 hours.
+
+### Gradient Boosting learning-rate experiment
+
+A learning rate of 0.1 performed best, achieving validation R²
+of 0.9306.
+
+A learning rate of 0.01 learned too slowly with 100 estimators,
+achieving R² of 0.7127. A learning rate of 1.0 performed less
+effectively, achieving R² of 0.8440, consistent with overly large
+updates reducing generalisation performance.
+
+### Cross-validation and final model selection
+
+Five-fold cross-validation on the combined training and validation
+data produced:
+
+- Linear Regression: mean R² 0.9261, standard deviation 0.0048.
+- Gradient Boosting: mean R² 0.9353, standard deviation 0.0045.
+
+Although Gradient Boosting achieved the stronger cross-validation
+mean, Linear Regression remained the final selection because it
+had the lowest validation RMSE, as required by the project brief.
+
+### Final test performance
+
+The selected Linear Regression model was evaluated once on the
+untouched test set.
+
+- Test MAE: 3.5671 hours.
+- Test MSE: 20.4624.
+- Test RMSE: 4.5235 hours.
+- Test R²: 0.9493.
+
+The final test R² exceeds the project acceptance threshold of 0.88.
