@@ -163,3 +163,95 @@ untouched test set.
 - Test R²: 0.9493.
 
 The final test R² exceeds the project acceptance threshold of 0.88.
+
+## Part C — Delay Classification and Alert Threshold
+
+### 1. Stratified data split
+
+The classification dataset was split into training, validation and test datasets using stratified sampling and random state 42.
+
+| Dataset | Rows | Delayed parcels | Delay rate |
+|---|---:|---:|---:|
+| Training | 840 | 195 | 23.21% |
+| Validation | 180 | 42 | 23.33% |
+| Test | 180 | 41 | 22.78% |
+
+### 2. Classification model comparison
+
+The blind baseline predicts every parcel as on time.
+
+| Model | TN | FP | FN | TP | Accuracy | Precision | Recall | F1 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| blind_all_on_time | 138 | 0 | 42 | 0 | 0.7667 | 0.0000 | 0.0000 | 0.0000 |
+| logistic_regression | 128 | 10 | 7 | 35 | 0.9056 | 0.7778 | 0.8333 | 0.8046 |
+| decision_tree_depth_6 | 128 | 10 | 11 | 31 | 0.8833 | 0.7561 | 0.7381 | 0.7470 |
+| random_forest_default | 132 | 6 | 11 | 31 | 0.9056 | 0.8378 | 0.7381 | 0.7848 |
+
+
+The blind baseline achieves 76.67% accuracy but has zero recall and zero F1 because it detects no delayed parcels. Accuracy alone is therefore insufficient to judge the usefulness of this classifier.
+
+The selected decision tree depth was 6.
+
+### 3. Feature importance and selection
+
+The top seven features ranked by ANOVA F-score were:
+
+distance_km, hub_tier, hub_daily_capacity, n_stops, promised_hours, rain_flag, sale_event_flag.
+
+The five noise columns have a combined Random Forest importance of **0.2245**. Their F-score ranks are all outside the top seven, indicating that their individual delay signals are weak even though the Random Forest assigns them some importance.
+
+| Number of selected features | Validation F1 |
+|---:|---:|
+| 5 | 0.6988 |
+| 7 | 0.8333 |
+| 10 | 0.7857 |
+| 12 | 0.8049 |
+| 17 | 0.7848 |
+
+
+Seven features produced the highest validation F1 of 0.8333, so seven features were selected for model tuning.
+
+### 4. Hyperparameter tuning
+
+| Search method | Candidates | Total fits | Best CV accuracy | Validation F1 |
+|---|---:|---:|---:|---:|
+| grid_search | 27 | 135 | 0.8952 | 0.7750 |
+| randomized_search | 9 | 45 | 0.8905 | 0.7848 |
+| default_forest_same_7_features | 1 | 1 | Not applicable | 0.8333 |
+
+
+The default Random Forest using seven features achieved the highest validation F1 (0.8333), outperforming Grid Search (0.7750) and Randomized Search (0.7848). This indicates that hyperparameter tuning did not improve validation F1 in this experiment. The validation set contains only 180 rows, so the results should be interpreted with that sample size in mind.
+
+### 5. Operational alert threshold
+
+The selected threshold was **0.5**, the highest tested threshold satisfying the validation recall requirement of at least 80%.
+
+At this threshold, validation precision was 0.7955 and recall was 0.8333.
+
+### 6. Final test performance
+
+| Metric | Final test result |
+|---|---:|
+| Threshold | 0.5 |
+| TN | 125 |
+| FP | 14 |
+| FN | 10 |
+| TP | 31 |
+| Accuracy | 0.8667 |
+| Precision | 0.6889 |
+| Recall | 0.7561 |
+| F1 | 0.7209 |
+
+Test recall (0.7561) was lower than validation recall (0.8333). The test set contained only 41 delayed parcels, so each additional missed delayed parcel has a noticeable effect on recall.
+
+### 7. Final classifier configuration
+
+| Parameter | Selected value |
+|---|---|
+| Feature selector | SelectKBest |
+| Selected features | 7 |
+| Estimators | 100 |
+| Maximum depth | unlimited |
+| Minimum samples per leaf | 1 |
+| Alert threshold | 0.5 |
+| Selection basis | default_forest_same_7_features |
